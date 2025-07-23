@@ -1,26 +1,14 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import Layout from "./components/layout/Layout.jsx";
-import Dashboard from "./pages/Dashboard.jsx";
-import Users from "./pages/Users.jsx";
-import Categories from "./pages/Categories.jsx";
-import Products from "./pages/Products.jsx";
-import Inventory from "./pages/Inventory.jsx";
-import Orders from "./pages/Orders.jsx";
+import AppRouter from "./router";
 import "./App.css";
 
 function App() {
   return (
     <Router>
       <Layout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/users" element={<Users />} />
-          <Route path="/categories" element={<Categories />} />
-          <Route path="/products" element={<Products />} />
-          <Route path="/inventory" element={<Inventory />} />
-          <Route path="/orders" element={<Orders />} />
-        </Routes>
+        <AppRouter />
       </Layout>
       <Toaster />
     </Router>

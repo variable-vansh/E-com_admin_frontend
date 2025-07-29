@@ -20,11 +20,10 @@ export const authService = {
     const token = localStorage.getItem("adminToken");
     return !!token;
   },
-
   // Logout function
   logout: () => {
     localStorage.removeItem("adminToken");
-    window.location.href = "/login";
+    window.location.href = "/admin/login";
   },
 
   // Make protected requests with token

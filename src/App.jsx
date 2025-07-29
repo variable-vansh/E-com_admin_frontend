@@ -5,7 +5,7 @@ import "./App.css";
 
 function App() {
   return (
-    <Router>
+    <Router basename="/admin">
       <AppRouter />
       <Toaster />
     </Router>

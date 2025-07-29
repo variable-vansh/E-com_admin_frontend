@@ -29,6 +29,7 @@ const AppRouter = () => {
   const isLoggedIn = authService.isLoggedIn();
   return (
     <Routes>
+      {" "}
       {/* Auth routes (login/signup) */}
       {authRoutes.map((route) => {
         const Component = componentMap[route.component];
@@ -40,19 +41,6 @@ const AppRouter = () => {
           />
         );
       })}
-
-      {/* Admin route - redirect to login if not authenticated, to dashboard if authenticated */}
-      <Route
-        path="/admin"
-        element={
-          isLoggedIn ? (
-            <Navigate to="/" replace />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-
       {/* Protected routes with layout */}
       <Route
         path="/"
@@ -76,7 +64,6 @@ const AppRouter = () => {
             );
           })}
       </Route>
-
       {/* Catch-all route for 404 */}
       <Route path="*" element={<NotFound />} />
     </Routes>

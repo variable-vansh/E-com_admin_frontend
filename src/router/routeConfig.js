@@ -45,6 +45,18 @@ export const routes = [
   },
 ];
 
+// Auth routes (not protected)
+export const authRoutes = [
+  {
+    path: "/login",
+    component: "Login",
+  },
+  {
+    path: "/signup",
+    component: "Signup",
+  },
+];
+
 // Get navigation routes (excluding hidden ones)
 export const getNavigationRoutes = () => {
   return routes.filter((route) => !route.hidden);

@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import {
-  Modal,
-  Box,
-  Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   TextField,
   Button,
   FormControl,
@@ -10,21 +11,16 @@ import {
   Select,
   MenuItem,
   FormControlLabel,
-  Checkbox,
+  Switch,
+  Box,
+  Grid,
+  Divider,
+  Typography,
+  Paper,
 } from "@mui/material";
 import { categoriesService } from "../../services/crudService";
-
-const modalStyle = {
-  position: "absolute",
-  top: "50%",
-  left: "50%",
-  transform: "translate(-50%, -50%)",
-  width: 400,
-  bgcolor: "background.paper",
-  border: "2px solid #000",
-  boxShadow: 24,
-  p: 4,
-};
+import ImageUpload from "../common/ImageUpload";
+import "../common/FormStyles.css";
 
 const ProductForm = ({ open, onClose, product, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -32,9 +28,12 @@ const ProductForm = ({ open, onClose, product, onSubmit }) => {
     description: "",
     price: "",
     categoryId: "",
+    image: "",
     isActive: true,
   });
   const [categories, setCategories] = useState([]);
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -53,6 +52,7 @@ const ProductForm = ({ open, onClose, product, onSubmit }) => {
         description: product.description || "",
         price: product.price || "",
         categoryId: product.categoryId || "",
+        image: product.image || "",
         isActive: product.isActive !== false,
       });
     } else {
@@ -61,19 +61,64 @@ const ProductForm = ({ open, onClose, product, onSubmit }) => {
         description: "",
         price: "",
         categoryId: categories.length > 0 ? categories[0].id : "",
+        image: "",
         isActive: true,
       });
     }
+    setErrors({});
   }, [product, open, categories]);
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Name is required";
+    }
+
+    if (!formData.price) {
+      newErrors.price = "Price is required";
+    } else if (isNaN(formData.price) || parseFloat(formData.price) <= 0) {
+      newErrors.price = "Price must be a valid positive number";
+    }
+
+    if (!formData.categoryId) {
+      newErrors.categoryId = "Category is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const productData = {
-      ...formData,
-      price: parseFloat(formData.price),
-    };
+    if (!validateForm()) return;
 
-    await onSubmit(productData);
+    setLoading(true);
+    try {
+      const productData = {
+        ...formData,
+        price: parseFloat(formData.price),
+      };
+
+      await onSubmit(productData);
+      handleClose();
+    } catch (error) {
+      console.error("Error submitting product:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    setFormData({
+      name: "",
+      description: "",
+      price: "",
+      categoryId: "",
+      image: "",
+      isActive: true,
+    });
+    setErrors({});
     onClose();
   };
 
@@ -81,77 +126,176 @@ const ProductForm = ({ open, onClose, product, onSubmit }) => {
     const value =
       e.target.type === "checkbox" ? e.target.checked : e.target.value;
     setFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <Box sx={modalStyle}>
-        <Typography variant="h6" mb={2}>
-          {product ? "Edit" : "Add"} Product
-        </Typography>
-        <form onSubmit={handleSubmit}>
-          <TextField
-            label="Name"
-            value={formData.name}
-            onChange={handleChange("name")}
-            fullWidth
-            required
-            margin="normal"
-          />
-          <TextField
-            label="Description"
-            value={formData.description}
-            onChange={handleChange("description")}
-            fullWidth
-            multiline
-            rows={4}
-            margin="normal"
-          />
-          <TextField
-            label="Price"
-            type="number"
-            value={formData.price}
-            onChange={handleChange("price")}
-            fullWidth
-            required
-            margin="normal"
-            inputProps={{ step: "0.01", min: "0" }}
-          />
-          <FormControl fullWidth margin="normal">
-            <InputLabel>Category</InputLabel>
-            <Select
-              value={formData.categoryId}
-              onChange={handleChange("categoryId")}
-              label="Category"
-              required
-            >
-              {categories.map((cat) => (
-                <MenuItem key={cat.id} value={cat.id}>
-                  {cat.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={formData.isActive}
-                onChange={handleChange("isActive")}
-              />
-            }
-            label="Active"
-          />
-          <Box sx={{ mt: 2, display: "flex", gap: 2 }}>
-            <Button type="submit" variant="contained" fullWidth>
-              {product ? "Update" : "Create"}
-            </Button>
-            <Button variant="outlined" onClick={onClose} fullWidth>
-              Cancel
-            </Button>
-          </Box>
-        </form>
-      </Box>
-    </Modal>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      className="form-dialog"
+      maxWidth="lg"
+      fullWidth
+    >
+      <form onSubmit={handleSubmit}>
+        <DialogTitle className="form-dialog-title">
+          <Typography variant="h6" component="div">
+            {product ? "Edit Product" : "Add New Product"}
+          </Typography>
+        </DialogTitle>
+
+        <DialogContent className="form-dialog-content">
+          <div className="form-container">
+            {/* Left Column - Form Fields */}
+            <div className="form-fields-column">
+              <Typography variant="subtitle1" className="form-section-title">
+                Product Information
+              </Typography>
+              <Divider className="form-divider" />
+
+              <div className="form-inputs-container">
+                <TextField
+                  className="form-text-field"
+                  label="Product Name"
+                  value={formData.name}
+                  onChange={handleChange("name")}
+                  error={!!errors.name}
+                  helperText={errors.name}
+                  required
+                  placeholder="Enter product name"
+                />
+
+                <TextField
+                  className="form-text-field"
+                  label="Description"
+                  value={formData.description}
+                  onChange={handleChange("description")}
+                  multiline
+                  rows={3}
+                  placeholder="Enter product description"
+                />
+
+                <TextField
+                  className="form-text-field"
+                  label="Price (₹)"
+                  type="number"
+                  value={formData.price}
+                  onChange={handleChange("price")}
+                  error={!!errors.price}
+                  helperText={errors.price}
+                  required
+                  inputProps={{ min: 0, step: "0.01" }}
+                  placeholder="0.00"
+                />
+
+                <FormControl
+                  className="form-select"
+                  error={!!errors.categoryId}
+                >
+                  <InputLabel required>Category</InputLabel>
+                  <Select
+                    value={formData.categoryId}
+                    onChange={handleChange("categoryId")}
+                    label="Category"
+                  >
+                    {categories.map((cat) => (
+                      <MenuItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {errors.categoryId && (
+                    <Typography className="form-select-error-text">
+                      {errors.categoryId}
+                    </Typography>
+                  )}
+                </FormControl>
+              </div>
+            </div>
+
+            {/* Right Column - Image Upload & Controls */}
+            <div className="form-controls-column">
+              {/* Image Upload Section */}
+              <div>
+                <Divider className="form-divider" />
+                <ImageUpload
+                  value={formData.image}
+                  onChange={(url) =>
+                    setFormData((prev) => ({ ...prev, image: url }))
+                  }
+                  bucket="products"
+                  folder="product-images"
+                  size={250}
+                />
+              </div>
+
+              {/* Status Controls */}
+              <div>
+                <Typography variant="subtitle1" className="form-section-title">
+                  Status
+                </Typography>
+                <Divider className="form-divider" />
+                <div className="status-paper">
+                  <FormControlLabel
+                    className="form-switch-container"
+                    control={
+                      <Switch
+                        checked={formData.isActive}
+                        onChange={handleChange("isActive")}
+                        color="primary"
+                      />
+                    }
+                    label={
+                      <div className="status-label-container">
+                        <Typography variant="body2" className="status-title">
+                          {formData.isActive ? "Active" : "Inactive"}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          className="status-description"
+                        >
+                          {formData.isActive
+                            ? "Product is visible to customers"
+                            : "Product is hidden from customers"}
+                        </Typography>
+                      </div>
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="form-actions">
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={loading}
+                  size="large"
+                  className="form-submit-button"
+                >
+                  {loading
+                    ? "Saving..."
+                    : product
+                    ? "Update Product"
+                    : "Create Product"}
+                </Button>
+                <Button
+                  onClick={handleClose}
+                  variant="outlined"
+                  disabled={loading}
+                  size="large"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </form>
+    </Dialog>
   );
 };
 

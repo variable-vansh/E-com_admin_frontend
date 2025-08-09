@@ -7,8 +7,9 @@ import {
   IconButton,
   CircularProgress,
   Chip,
+  Avatar,
 } from "@mui/material";
-import { Edit, Delete } from "@mui/icons-material";
+import { Edit, Delete, Image as ImageIcon } from "@mui/icons-material";
 
 const ProductTable = ({
   products,
@@ -17,6 +18,7 @@ const ProductTable = ({
   onDelete,
   loading,
 }) => {
+  console.log(products);
   const getCategoryName = (categoryId) => {
     const category = categories.find((cat) => cat.id === categoryId);
     return category ? category.name : "N/A";
@@ -30,6 +32,7 @@ const ProductTable = ({
     <Table>
       <TableHead>
         <TableRow>
+          <TableCell>Image</TableCell>
           <TableCell>ID</TableCell>
           <TableCell>Name</TableCell>
           <TableCell>Description</TableCell>
@@ -42,6 +45,20 @@ const ProductTable = ({
       <TableBody>
         {products.map((product) => (
           <TableRow key={product.id}>
+            <TableCell>
+              <Avatar
+                src={product.image}
+                alt={product.name}
+                sx={{
+                  width: 50,
+                  height: 50,
+                  borderRadius: 1,
+                }}
+                variant="rounded"
+              >
+                <ImageIcon />
+              </Avatar>
+            </TableCell>
             <TableCell>{product.id}</TableCell>
             <TableCell>{product.name}</TableCell>
             <TableCell>
@@ -50,9 +67,9 @@ const ProductTable = ({
                 : product.description}
             </TableCell>
             <TableCell>
-              {new Intl.NumberFormat("en-US", {
+              {new Intl.NumberFormat("en-IN", {
                 style: "currency",
-                currency: "USD",
+                currency: "INR",
               }).format(product.price)}
             </TableCell>
             <TableCell>{getCategoryName(product.categoryId)}</TableCell>

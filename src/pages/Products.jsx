@@ -37,15 +37,11 @@ const Products = () => {
   // Handle search with debounce
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      if (searchQuery) {
-        searchItems(searchQuery);
-      } else {
-        fetchData();
-      }
-    }, 500);
+      searchItems(searchQuery.trim(), categories); // Pass categories for better search
+    }, 300); // Reduced delay for better UX
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery, searchItems, fetchData]);
+  }, [searchQuery, searchItems, categories]);
 
   const handleOpen = (product = null) => {
     setCurrentProduct(product);

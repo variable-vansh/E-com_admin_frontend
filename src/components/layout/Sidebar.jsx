@@ -24,12 +24,12 @@ const drawerWidth = 240;
 const Sidebar = () => {
   const menuItems = [
     { text: "Dashboard", icon: <Dashboard />, path: "/" },
-    { text: "Users", icon: <People />, path: "/users" },
+    { text: "Grains", icon: <AgricultureIcon />, path: "/grains" },
     { text: "Categories", icon: <Category />, path: "/categories" },
     { text: "Products", icon: <ShoppingCart />, path: "/products" },
-    { text: "Grains", icon: <AgricultureIcon />, path: "/grains" },
     { text: "Inventory", icon: <Inventory />, path: "/inventory" },
     { text: "Orders", icon: <Receipt />, path: "/orders" },
+    { text: "Users", icon: <People />, path: "/users" },
   ];
 
   return (

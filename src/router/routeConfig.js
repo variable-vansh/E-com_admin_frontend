@@ -32,6 +32,12 @@ export const routes = [
     component: "Products",
   },
   {
+    path: "/grains",
+    name: "Grains",
+    icon: "Grain",
+    component: "Grains",
+  },
+  {
     path: "/inventory",
     name: "Inventory",
     icon: "Storage",

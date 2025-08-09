@@ -17,6 +17,8 @@ import {
   Receipt,
 } from "@mui/icons-material";
 
+import AgricultureIcon from "@mui/icons-material/Agriculture";
+
 const drawerWidth = 240;
 
 const Sidebar = () => {
@@ -25,6 +27,7 @@ const Sidebar = () => {
     { text: "Users", icon: <People />, path: "/users" },
     { text: "Categories", icon: <Category />, path: "/categories" },
     { text: "Products", icon: <ShoppingCart />, path: "/products" },
+    { text: "Grains", icon: <AgricultureIcon />, path: "/grains" },
     { text: "Inventory", icon: <Inventory />, path: "/inventory" },
     { text: "Orders", icon: <Receipt />, path: "/orders" },
   ];

@@ -4,6 +4,7 @@ import Dashboard from "../pages/Dashboard";
 import Users from "../pages/Users";
 import Categories from "../pages/Categories";
 import Products from "../pages/Products";
+import Grains from "../pages/Grains";
 import Inventory from "../pages/Inventory";
 import Orders from "../pages/Orders";
 import Login from "../pages/Login";
@@ -19,6 +20,7 @@ const componentMap = {
   Users,
   Categories,
   Products,
+  Grains,
   Inventory,
   Orders,
   Login,

@@ -96,6 +96,7 @@ class CrudService {
 // Create service instances
 export const categoriesService = new CrudService("/categories", "Category");
 export const productsService = new CrudService("/products", "Product");
+export const grainsService = new CrudService("/grains", "Grain");
 export const usersService = new CrudService("/users", "User");
 export const ordersService = new CrudService("/orders", "Order");
 export const inventoryService = new CrudService("/inventory", "Inventory");

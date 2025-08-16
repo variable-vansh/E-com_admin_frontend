@@ -6,11 +6,21 @@ import Sidebar from "./Sidebar";
 
 const Layout = () => {
   return (
-    <Box sx={{ display: "flex" }}>
+    <Box
+      sx={{ display: "flex", backgroundColor: "#ffffff", minHeight: "100vh" }}
+    >
       <CssBaseline />
       <Header />
       <Sidebar />
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 3,
+          backgroundColor: "#ffffff",
+          minHeight: "100vh",
+        }}
+      >
         <Toolbar />
         <Outlet />
       </Box>

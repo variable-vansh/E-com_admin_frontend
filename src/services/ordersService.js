@@ -1,10 +1,10 @@
 import api from "./api";
 import { toast } from "react-hot-toast";
 
-class CrudService {
-  constructor(endpoint, entityName) {
-    this.endpoint = endpoint;
-    this.entityName = entityName;
+class OrdersService {
+  constructor() {
+    this.endpoint = "/orders";
+    this.entityName = "Order";
   }
 
   async getAll(params = {}) {
@@ -14,8 +14,24 @@ class CrudService {
         ? `${this.endpoint}?${queryString}`
         : this.endpoint;
       const response = await api.get(url);
-      return { data: response.data, error: null };
+
+      // Debug logging
+      console.log("Orders API Response:", response);
+      console.log("Orders API Response Data:", response.data);
+      console.log("Is response.data an array?", Array.isArray(response.data));
+
+      // Handle different response formats
+      let ordersData = response.data;
+      if (response.data && response.data.success && response.data.data) {
+        ordersData = response.data.data;
+      }
+
+      console.log("Final orders data:", ordersData);
+      console.log("Is final data an array?", Array.isArray(ordersData));
+
+      return { data: Array.isArray(ordersData) ? ordersData : [], error: null };
     } catch (error) {
+      console.error("Orders API Error:", error);
       const errorMessage = `Failed to fetch ${this.entityName}s`;
       toast.error(errorMessage);
       return { data: [], error: errorMessage };
@@ -30,6 +46,17 @@ class CrudService {
       const errorMessage = `Failed to fetch ${this.entityName}`;
       toast.error(errorMessage);
       return { data: null, error: errorMessage };
+    }
+  }
+
+  async getByPhone(phone) {
+    try {
+      const response = await api.get(`${this.endpoint}/customer/${phone}`);
+      return { data: response.data, error: null };
+    } catch (error) {
+      const errorMessage = `Failed to fetch orders by phone`;
+      toast.error(errorMessage);
+      return { data: [], error: errorMessage };
     }
   }
 
@@ -69,6 +96,20 @@ class CrudService {
     }
   }
 
+  async updateStatus(id, status) {
+    try {
+      const response = await api.patch(`${this.endpoint}/${id}/status`, {
+        status,
+      });
+      toast.success(`Order status updated to ${status}`);
+      return { data: response.data, error: null };
+    } catch (error) {
+      const errorMessage = `Failed to update order status`;
+      toast.error(errorMessage);
+      return { data: null, error: errorMessage };
+    }
+  }
+
   async delete(id) {
     try {
       await api.delete(`${this.endpoint}/${id}`);
@@ -78,6 +119,17 @@ class CrudService {
       const errorMessage = `Failed to delete ${this.entityName}`;
       toast.error(errorMessage);
       return { error: errorMessage };
+    }
+  }
+
+  async getStats() {
+    try {
+      const response = await api.get(`${this.endpoint}/stats`);
+      return { data: response.data, error: null };
+    } catch (error) {
+      const errorMessage = `Failed to fetch order statistics`;
+      toast.error(errorMessage);
+      return { data: null, error: errorMessage };
     }
   }
 
@@ -93,13 +145,6 @@ class CrudService {
   }
 }
 
-// Create service instances
-export const categoriesService = new CrudService("/categories", "Category");
-export const productsService = new CrudService("/products", "Product");
-export const grainsService = new CrudService("/grains", "Grain");
-export const usersService = new CrudService("/users", "User");
-// Note: Using enhanced ordersService from ordersService.js instead
-// export const ordersService = new CrudService("/orders", "Order");
-export const inventoryService = new CrudService("/inventory", "Inventory");
-
-export default CrudService;
+// Create and export the service instance
+export const ordersService = new OrdersService();
+export default OrdersService;

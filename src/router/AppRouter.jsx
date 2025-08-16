@@ -52,7 +52,7 @@ const AppRouter = () => {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Dashboard />} />
+        <Route index element={<Orders />} />
         {routes
           .filter((route) => route.path !== "/")
           .map((route) => {

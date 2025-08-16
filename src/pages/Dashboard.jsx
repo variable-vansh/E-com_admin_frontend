@@ -51,7 +51,7 @@ const StatCard = ({
         }}
       >
         <Box>
-          <Typography color="textSecondary" gutterBottom variant="overline">
+          <Typography color="textSecondary" gutterBottom variant="body2">
             {title}
           </Typography>
           <Typography variant="h4" component="div">
@@ -59,17 +59,16 @@ const StatCard = ({
           </Typography>
           {trend && (
             <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
-              {trend > 0 ? (
-                <TrendingUp color="success" fontSize="small" />
+              {trend.direction === "up" ? (
+                <TrendingUp color="success" sx={{ mr: 0.5, fontSize: 16 }} />
               ) : (
-                <TrendingDown color="error" fontSize="small" />
+                <TrendingDown color="error" sx={{ mr: 0.5, fontSize: 16 }} />
               )}
               <Typography
-                variant="body2"
-                color={trend > 0 ? "success.main" : "error.main"}
-                sx={{ ml: 0.5 }}
+                variant="caption"
+                color={trend.direction === "up" ? "success.main" : "error.main"}
               >
-                {Math.abs(trend)}%
+                {trend.percentage}% from last month
               </Typography>
             </Box>
           )}
@@ -77,119 +76,104 @@ const StatCard = ({
         <Box
           sx={{
             backgroundColor: `${color}.light`,
-            borderRadius: "50%",
+            borderRadius: 2,
             p: 1,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          {React.cloneElement(icon, {
-            sx: { fontSize: 40, color: `${color}.main` },
-          })}
+          {React.cloneElement(icon, { color })}
         </Box>
       </Box>
     </CardContent>
   </Card>
 );
 
-const getStatusColor = (status) => {
-  const colors = {
-    PENDING: "warning",
-    CONFIRMED: "info",
-    PROCESSING: "primary",
-    SHIPPED: "secondary",
-    DELIVERED: "success",
-    CANCELLED: "error",
-    REFUNDED: "default",
-  };
-  return colors[status] || "default";
-};
-
 const Dashboard = () => {
-  const [stats, setStats] = useState({
-    users: 0,
-    products: 0,
-    orders: 0,
-    revenue: 0,
+  const [dashboardData, setDashboardData] = useState({
+    totalUsers: 0,
+    totalProducts: 0,
+    totalOrders: 0,
+    lowStockProducts: [],
+    recentOrders: [],
+    orderStatusDistribution: [],
   });
-  const [recentOrders, setRecentOrders] = useState([]);
-  const [lowStockProducts, setLowStockProducts] = useState([]);
-  const [orderStatusDistribution, setOrderStatusDistribution] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchDashboardData = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
+
       // Fetch all data in parallel
-      const [usersRes, productsRes, ordersRes, inventoryRes] =
-        await Promise.all([
-          api.get("/users"),
-          api.get("/products"),
-          api.get("/orders"),
-          api.get("/inventory").catch(() => ({ data: [] })), // Handle case where inventory endpoint might not exist
-        ]);
+      const [
+        usersResponse,
+        productsResponse,
+        ordersResponse,
+        inventoryResponse,
+      ] = await Promise.all([
+        api.get("/users"),
+        api.get("/products"),
+        api.get("/orders"),
+        api.get("/inventory"),
+      ]);
 
-      const users = usersRes.data;
-      const products = productsRes.data;
-      const orders = ordersRes.data;
-      const inventory = inventoryRes.data;
+      // Process users data
+      const users = usersResponse.data?.data || usersResponse.data || [];
+      const totalUsers = Array.isArray(users) ? users.length : 0;
 
-      // Calculate stats
-      const revenue = orders.reduce(
-        (sum, order) => sum + (order.totalAmount || 0),
-        0
-      );
+      // Process products data
+      const products = productsResponse.data?.data || productsResponse.data || [];
+      const totalProducts = Array.isArray(products) ? products.length : 0;
 
-      setStats({
-        users: users.length,
-        products: products.length,
-        orders: orders.length,
-        revenue: revenue,
-      });
+      // Process orders data
+      const orders = ordersResponse.data?.data || ordersResponse.data || [];
+      const totalOrders = Array.isArray(orders) ? orders.length : 0;
 
-      // Get recent orders (last 10)
-      const sortedOrders = orders
-        .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))
-        .slice(0, 10);
-      setRecentOrders(sortedOrders);
+      // Get recent orders (last 5)
+      const recentOrders = Array.isArray(orders)
+        ? orders
+            .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))
+            .slice(0, 5)
+        : [];
 
       // Calculate order status distribution
-      const statusCounts = orders.reduce((acc, order) => {
-        acc[order.status] = (acc[order.status] || 0) + 1;
-        return acc;
-      }, {});
+      const orderStatusDistribution = Array.isArray(orders)
+        ? Object.entries(
+            orders.reduce((acc, order) => {
+              const status = order.orderStatus || order.status || "pending";
+              acc[status] = (acc[status] || 0) + 1;
+              return acc;
+            }, {})
+          ).map(([status, count]) => ({
+            status,
+            count,
+            percentage: ((count / orders.length) * 100).toFixed(1),
+          }))
+        : [];
 
-      const statusDistribution = Object.entries(statusCounts).map(
-        ([status, count]) => ({
-          status,
-          count,
-          percentage: ((count / orders.length) * 100).toFixed(1),
-        })
-      );
-      setOrderStatusDistribution(statusDistribution);
+      // Process inventory data for low stock alerts
+      const inventory =
+        inventoryResponse.data?.data || inventoryResponse.data || [];
+      const lowStockProducts = Array.isArray(inventory)
+        ? inventory.filter(
+            (item) =>
+              item.availableStock <= (item.lowStockAlert || 10) &&
+              item.availableStock >= 0
+          )
+        : [];
 
-      // Get low stock products
-      const lowStock = inventory
-        .filter((item) => {
-          const availableStock = item.quantity - (item.reservedQuantity || 0);
-          return availableStock <= (item.lowStockAlert || 10);
-        })
-        .map((item) => {
-          const product = products.find((p) => p.id === item.productId);
-          return {
-            ...item,
-            productName: product?.name || `Product ID: ${item.productId}`,
-            availableStock: item.quantity - (item.reservedQuantity || 0),
-          };
-        })
-        .sort((a, b) => a.availableStock - b.availableStock)
-        .slice(0, 10);
-
-      setLowStockProducts(lowStock);
+      setDashboardData({
+        totalUsers,
+        totalProducts,
+        totalOrders,
+        lowStockProducts,
+        recentOrders,
+        orderStatusDistribution,
+      });
     } catch (error) {
-      toast.error("Failed to fetch dashboard data");
-      console.error("Dashboard error:", error);
+      console.error("Failed to fetch dashboard data:", error);
+      toast.error("Failed to load dashboard data");
     } finally {
       setLoading(false);
     }
@@ -199,98 +183,121 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
+  const getStatusColor = (status) => {
+    const statusColors = {
+      pending: "warning",
+      confirmed: "info",
+      processing: "primary",
+      shipped: "secondary",
+      delivered: "success",
+      cancelled: "error",
+      completed: "success",
+    };
+    return statusColors[status?.toLowerCase()] || "default";
+  };
+
+  const {
+    totalUsers,
+    totalProducts,
+    totalOrders,
+    lowStockProducts,
+    recentOrders,
+    orderStatusDistribution,
+  } = dashboardData;
+
   return (
-    <Box>
+    <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom>
-        Dashboard Overview
-      </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-        Welcome to your e-commerce admin dashboard
+        Dashboard
       </Typography>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Updated to 3-column layout without revenue */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={4}>
           <StatCard
             title="Total Users"
-            value={stats.users.toLocaleString()}
+            value={totalUsers}
             icon={<People />}
             color="primary"
             loading={loading}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={4}>
           <StatCard
             title="Total Products"
-            value={stats.products.toLocaleString()}
+            value={totalProducts}
             icon={<Inventory />}
-            color="success"
+            color="secondary"
             loading={loading}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={4}>
           <StatCard
             title="Total Orders"
-            value={stats.orders.toLocaleString()}
+            value={totalOrders}
             icon={<ShoppingCart />}
             color="info"
             loading={loading}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Total Revenue"
-            value={`$${stats.revenue.toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-            })}`}
-            icon={<AttachMoney />}
-            color="warning"
-            loading={loading}
-          />
-        </Grid>
       </Grid>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={3} sx={{ mb: 4 }}>
         {/* Recent Orders */}
         <Grid item xs={12} lg={8}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Recent Orders
-              </Typography>
+          <Card sx={{ height: "400px", display: "flex", flexDirection: "column" }}>
+            <CardContent sx={{ flexGrow: 1 }}>
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+                <Typography variant="h6">
+                  Recent Orders
+                </Typography>
+                <Chip 
+                  label={`${recentOrders.length} orders`} 
+                  size="small" 
+                  color="primary" 
+                  variant="outlined" 
+                />
+              </Box>
               {recentOrders.length > 0 ? (
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Order #</TableCell>
-                      <TableCell>Customer</TableCell>
-                      <TableCell align="right">Amount</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Date</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {recentOrders.map((order) => (
-                      <TableRow key={order.id}>
-                        <TableCell>#{order.orderNumber || order.id}</TableCell>
-                        <TableCell>{order.customerName}</TableCell>
-                        <TableCell align="right">
-                          ${order.totalAmount?.toFixed(2)}
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={order.status}
-                            color={getStatusColor(order.status)}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {new Date(order.orderDate).toLocaleDateString()}
-                        </TableCell>
+                <Box sx={{ maxHeight: "300px", overflow: "auto" }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Order #</TableCell>
+                        <TableCell>Customer</TableCell>
+                        <TableCell align="right">Amount</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Date</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHead>
+                    <TableBody>
+                      {recentOrders.map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell>#{order.orderNumber || order.id}</TableCell>
+                          <TableCell>{order.customerName}</TableCell>
+                          <TableCell align="right">
+                            $
+                            {Number(
+                              order.totalAmount || order.grandTotal || 0
+                            ).toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={order.orderStatus || order.status}
+                              color={getStatusColor(
+                                order.orderStatus || order.status
+                              )}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {new Date(order.orderDate).toLocaleDateString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Box>
               ) : (
                 <Typography color="text.secondary" sx={{ py: 2 }}>
                   No orders found
@@ -302,31 +309,49 @@ const Dashboard = () => {
 
         {/* Order Status Distribution */}
         <Grid item xs={12} lg={4}>
-          <Card sx={{ height: "100%" }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Order Status Distribution
-              </Typography>
+          <Card sx={{ height: "400px", display: "flex", flexDirection: "column" }}>
+            <CardContent sx={{ flexGrow: 1 }}>
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+                <Typography variant="h6">
+                  Order Status
+                </Typography>
+                <Chip 
+                  label="Live Stats" 
+                  size="small" 
+                  color="success" 
+                  variant="outlined" 
+                />
+              </Box>
               {orderStatusDistribution.length > 0 ? (
-                <List dense>
-                  {orderStatusDistribution.map(
-                    ({ status, count, percentage }) => (
-                      <ListItem key={status} sx={{ px: 0 }}>
-                        <ListItemIcon sx={{ minWidth: "auto", mr: 2 }}>
-                          <Chip
-                            label={status}
-                            color={getStatusColor(status)}
-                            size="small"
+                <Box sx={{ maxHeight: "300px", overflow: "auto" }}>
+                  <List dense>
+                    {orderStatusDistribution.map(
+                      ({ status, count, percentage }) => (
+                        <ListItem key={status} sx={{ px: 0, py: 1 }}>
+                          <ListItemIcon sx={{ minWidth: "auto", mr: 2 }}>
+                            <Chip
+                              label={status}
+                              color={getStatusColor(status)}
+                              size="small"
+                            />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={
+                              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <Typography variant="body2" fontWeight="medium">
+                                  {count} orders
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {percentage}%
+                                </Typography>
+                              </Box>
+                            }
                           />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={`${count} orders`}
-                          secondary={`${percentage}%`}
-                        />
-                      </ListItem>
-                    )
-                  )}
-                </List>
+                        </ListItem>
+                      )
+                    )}
+                  </List>
+                </Box>
               ) : (
                 <Typography color="text.secondary" sx={{ py: 2 }}>
                   No order data available
@@ -335,8 +360,10 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </Grid>
+      </Grid>
 
-        {/* Low Stock Alerts */}
+      {/* Low Stock Alerts */}
+      <Grid container spacing={3}>
         <Grid item xs={12}>
           <Card>
             <CardContent>

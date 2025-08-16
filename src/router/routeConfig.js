@@ -2,16 +2,15 @@
 export const routes = [
   {
     path: "/",
-    name: "Dashboard",
-    icon: "Dashboard",
-    component: "Dashboard",
+    name: "Orders",
+    icon: "ShoppingCart",
+    component: "Orders",
   },
   {
     path: "/dashboard",
     name: "Dashboard",
     icon: "Dashboard",
     component: "Dashboard",
-    hidden: true, // Don't show in navigation
   },
   {
     path: "/users",
@@ -48,6 +47,7 @@ export const routes = [
     name: "Orders",
     icon: "ShoppingCart",
     component: "Orders",
+    hidden: true, // Don't show in navigation (duplicate)
   },
 ];
 

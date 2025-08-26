@@ -7,6 +7,12 @@ export const routes = [
     component: "Orders",
   },
   {
+    path: "/promos",
+    name: "Promos",
+    icon: "Campaign",
+    component: "Promos",
+  },
+  {
     path: "/dashboard",
     name: "Dashboard",
     icon: "Dashboard",

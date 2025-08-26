@@ -101,5 +101,6 @@ export const usersService = new CrudService("/users", "User");
 // Note: Using enhanced ordersService from ordersService.js instead
 // export const ordersService = new CrudService("/orders", "Order");
 export const inventoryService = new CrudService("/inventory", "Inventory");
+export const promosService = new CrudService("/promos", "Promo");
 
 export default CrudService;

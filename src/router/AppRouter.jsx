@@ -7,6 +7,7 @@ import Products from "../pages/Products";
 import Grains from "../pages/Grains";
 import Inventory from "../pages/Inventory";
 import Orders from "../pages/Orders";
+import Promos from "../pages/Promos";
 import Login from "../pages/Login";
 import Signup from "../pages/Signup";
 import NotFound from "../pages/NotFound";
@@ -23,6 +24,7 @@ const componentMap = {
   Grains,
   Inventory,
   Orders,
+  Promos,
   Login,
   Signup,
 };

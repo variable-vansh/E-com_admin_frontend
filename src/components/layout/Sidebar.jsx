@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Drawer,
   List,
@@ -15,6 +14,7 @@ import {
   ShoppingCart,
   Inventory,
   Receipt,
+  Campaign,
 } from "@mui/icons-material";
 
 import AgricultureIcon from "@mui/icons-material/Agriculture";
@@ -24,6 +24,7 @@ const drawerWidth = 240;
 const Sidebar = () => {
   const menuItems = [
     { text: "Orders", icon: <Receipt />, path: "/" },
+    { text: "Promotion", icon: <Campaign />, path: "/promos" },
     { text: "Dashboard", icon: <Dashboard />, path: "/dashboard" },
     { text: "Grains", icon: <AgricultureIcon />, path: "/grains" },
     { text: "Categories", icon: <Category />, path: "/categories" },

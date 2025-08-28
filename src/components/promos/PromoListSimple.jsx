@@ -159,12 +159,6 @@ const PromoListSimple = ({
               }}
             >
               <Box>
-                <Typography
-                  variant="caption"
-                  sx={{ display: "block", opacity: 0.9 }}
-                >
-                  Preview: Desktop (200px) • Tablet (160px) • Mobile (140px)
-                </Typography>
                 <Typography variant="caption" sx={{ opacity: 0.7 }}>
                   Created: {new Date(promo.createdAt).toLocaleDateString()}
                 </Typography>

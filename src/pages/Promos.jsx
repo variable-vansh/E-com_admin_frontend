@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react";
-import { Box, Paper, Typography } from "@mui/material";
-import { Add } from "@mui/icons-material";
+import {
+  Box,
+  Paper,
+  Typography,
+  ToggleButton,
+  ToggleButtonGroup,
+  Divider,
+} from "@mui/material";
+import { Add, PhoneAndroid, Computer } from "@mui/icons-material";
 import { promosService } from "../services/promosService";
 import PageHeader from "../components/common/PageHeader";
 import PromoImageUpload from "../components/promos/PromoImageUpload";
@@ -13,16 +20,20 @@ const Promos = () => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null });
+  const [activeDeviceType, setActiveDeviceType] = useState("DESKTOP"); // New state for device toggle
 
-  // Fetch promos on component mount
+  // Fetch promos on component mount and when device type changes
   useEffect(() => {
     fetchPromos();
-  }, []);
+  }, [activeDeviceType]);
 
   const fetchPromos = async () => {
     setLoading(true);
     try {
-      const result = await promosService.getAll();
+      // Fetch promos filtered by device type
+      const result = await promosService.getAll({
+        deviceType: activeDeviceType,
+      });
       if (result.data && Array.isArray(result.data)) {
         setPromos(result.data);
       } else {
@@ -37,16 +48,27 @@ const Promos = () => {
     }
   };
 
-  const handleImageUploadConfirm = async (imageUrl) => {
+  const handleDeviceTypeChange = (event, newDeviceType) => {
+    if (newDeviceType) {
+      setActiveDeviceType(newDeviceType);
+    }
+  };
+
+  const handleImageUploadConfirm = async (imageUrl, deviceType = "DESKTOP") => {
     if (!imageUrl) return;
 
     setUploading(true);
     try {
       const promoData = {
         imageUrl,
+        title: `${deviceType} Promo Banner`, // Add title
+        description: `Promotional banner for ${deviceType.toLowerCase()} devices`, // Add description
+        deviceType,
         isActive: true,
-        displayOrder: promos.length + 1, // Changed from 'order' to 'displayOrder'
+        displayOrder: promos.length + 1,
       };
+
+      console.log("Creating promo with data:", promoData); // Debug log
 
       const result = await promosService.create(promoData);
       if (result.data) {
@@ -57,6 +79,7 @@ const Promos = () => {
       }
     } catch (error) {
       console.error("Error creating promo:", error);
+      console.error("Error response:", error.response?.data); // Additional debug info
       toast.error("Failed to create promo");
     } finally {
       setUploading(false);
@@ -121,19 +144,59 @@ const Promos = () => {
       <PageHeader title="Promo Banner Management" />
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        {/* Device Type Toggle */}
+        <Paper sx={{ p: 3 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              mb: 2,
+            }}
+          >
+            <ToggleButtonGroup
+              value={activeDeviceType}
+              exclusive
+              onChange={handleDeviceTypeChange}
+              aria-label="device type"
+              size="large"
+              sx={{ mb: 1 }}
+            >
+              <ToggleButton value="DESKTOP" aria-label="desktop">
+                <Computer sx={{ mr: 1 }} />
+                Desktop Banners
+              </ToggleButton>
+              <ToggleButton value="MOBILE" aria-label="mobile">
+                <PhoneAndroid sx={{ mr: 1 }} />
+                Mobile Banners
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+          <Typography variant="body2" color="text.secondary" align="center">
+            Switch between device types to manage banners specifically designed
+            for desktop and mobile users.
+          </Typography>
+        </Paper>
+
         {/* Upload Section */}
         <Paper sx={{ p: 3 }}>
           <Typography variant="h6" gutterBottom>
-            Add New Promo Banner
+            Add New {activeDeviceType === "DESKTOP" ? "Desktop" : "Mobile"}{" "}
+            Promo Banner
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Upload promotional banners with precise preview of how they'll
-            appear across all devices.
+            Upload promotional banners optimized for{" "}
+            {activeDeviceType === "DESKTOP"
+              ? "desktop screens"
+              : "mobile devices"}
+            .
           </Typography>
           <Box sx={{ maxWidth: 800, mx: "auto" }}>
             <PromoImageUpload
               onConfirm={handleImageUploadConfirm}
               canvaTemplateUrl="https://www.canva.com/design/TEMPLATE_ID/edit"
+              defaultDeviceType={activeDeviceType}
+              key={activeDeviceType} // Force re-render when device type changes
             />
             {uploading && (
               <Typography
@@ -150,11 +213,14 @@ const Promos = () => {
         {/* Promo List Section */}
         <Paper sx={{ p: 3 }}>
           <Typography variant="h6" gutterBottom>
-            Manage Promo Banners
+            Manage {activeDeviceType === "DESKTOP" ? "Desktop" : "Mobile"} Promo
+            Banners
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Use the arrow buttons to reorder. Toggle status to show/hide
             banners.
+            {promos.length === 0 &&
+              ` No ${activeDeviceType.toLowerCase()} banners found.`}
           </Typography>
           <PromoListSimple
             promos={promos}

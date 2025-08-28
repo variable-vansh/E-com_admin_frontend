@@ -7,7 +7,11 @@ import { supabase } from "../config/supabase";
  * @param {string} folder - The folder within the bucket (optional)
  * @returns {Promise<{url: string, path: string} | null>}
  */
-export const uploadImage = async (file, bucket = "images", folder = "") => {
+export const uploadImage = async (
+  file,
+  bucket = "promos",
+  folder = "promo-images"
+) => {
   try {
     // Validate file type
     if (!file.type.startsWith("image/")) {

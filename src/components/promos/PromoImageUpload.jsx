@@ -12,17 +12,34 @@ import {
   Alert,
   Link,
   Divider,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import { PhotoCamera, CloudUpload, OpenInNew } from "@mui/icons-material";
 import { uploadImage, processImage } from "../../services/imageService";
 import toast from "react-hot-toast";
 
-const PromoImageUpload = ({ onConfirm, canvaTemplateUrl = null }) => {
+const DEVICE_PREVIEW = {
+  DESKTOP: { label: "Desktop", height: 200, width: 1200 },
+  MOBILE: { label: "Mobile", height: 140, width: 400 },
+  BOTH: { label: "Universal", height: 160, width: 800 },
+};
+
+const PromoImageUpload = ({
+  onConfirm,
+  canvaTemplateUrl = null,
+  defaultDeviceType = "DESKTOP",
+}) => {
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(false);
   const [pendingImageUrl, setPendingImageUrl] = useState(null);
   const fileInputRef = useRef(null);
+  const [deviceType, setDeviceType] = useState(defaultDeviceType);
+
+  const handleDeviceTypeChange = (event, newType) => {
+    if (newType) setDeviceType(newType);
+  };
 
   const handleFileSelect = async (event) => {
     const file = event.target.files[0];
@@ -43,16 +60,19 @@ const PromoImageUpload = ({ onConfirm, canvaTemplateUrl = null }) => {
     try {
       setLoading(true);
 
-      // Process image to banner format (6:1 aspect ratio)
-      const processedFile = await processImageToBanner(file);
-
+      // Get preview dimensions for selected device type
+      const { width, height } =
+        DEVICE_PREVIEW[deviceType] || DEVICE_PREVIEW.DESKTOP;
+      // Process image to correct aspect ratio
+      const processedFile = await processImageToBanner(file, width, height);
       // Create preview
       const previewUrl = URL.createObjectURL(processedFile);
       setPreview({
         url: previewUrl,
         file: processedFile,
+        width,
+        height,
       });
-
       setLoading(false);
       setConfirmDialog(true);
     } catch (error) {
@@ -62,20 +82,19 @@ const PromoImageUpload = ({ onConfirm, canvaTemplateUrl = null }) => {
     }
   };
 
-  const processImageToBanner = (file) => {
+  const processImageToBanner = (
+    file,
+    bannerWidth = 1200,
+    bannerHeight = 200
+  ) => {
     return new Promise((resolve, reject) => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       const img = new Image();
 
       img.onload = () => {
-        // Set canvas to banner dimensions (6:1 ratio)
-        const bannerWidth = 1200;
-        const bannerHeight = 200;
         canvas.width = bannerWidth;
         canvas.height = bannerHeight;
-
-        // Calculate how to crop the image to fit banner ratio
         const imgAspectRatio = img.width / img.height;
         const bannerAspectRatio = bannerWidth / bannerHeight;
 
@@ -106,8 +125,6 @@ const PromoImageUpload = ({ onConfirm, canvaTemplateUrl = null }) => {
           bannerWidth,
           bannerHeight
         );
-
-        // Convert to blob
         canvas.toBlob(
           (blob) => {
             if (blob) {
@@ -124,42 +141,11 @@ const PromoImageUpload = ({ onConfirm, canvaTemplateUrl = null }) => {
           0.9
         );
       };
-
       img.onerror = () => {
         reject(new Error("Failed to load image"));
       };
-
       img.src = URL.createObjectURL(file);
     });
-  };
-
-  const handleConfirm = async () => {
-    if (!preview?.file) return;
-
-    try {
-      setLoading(true);
-
-      // Upload to Supabase
-      const result = await uploadImage(preview.file, "promos", "promo-images");
-
-      if (result) {
-        setPendingImageUrl(result.url);
-        onConfirm(result.url);
-        toast.success("Image uploaded successfully");
-
-        // Reset form
-        setPreview(null);
-        setConfirmDialog(false);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-        }
-      }
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      toast.error("Failed to upload image");
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleCancel = () => {
@@ -170,6 +156,40 @@ const PromoImageUpload = ({ onConfirm, canvaTemplateUrl = null }) => {
     setConfirmDialog(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+  };
+
+  const handleConfirm = async () => {
+    if (!preview) return;
+
+    try {
+      setLoading(true);
+
+      // Upload the processed image
+      const uploadResult = await uploadImage(preview.file);
+
+      // Extract just the URL string from the upload result
+      const imageUrl = uploadResult.url;
+
+      // Call the onConfirm callback with the image URL string and device type
+      if (onConfirm) {
+        await onConfirm(imageUrl, deviceType);
+      }
+
+      // Clean up
+      URL.revokeObjectURL(preview.url);
+      setPreview(null);
+      setConfirmDialog(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      toast.success("Banner uploaded successfully!");
+    } catch (error) {
+      console.error("Error uploading banner:", error);
+      toast.error("Failed to upload banner");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -191,54 +211,61 @@ const PromoImageUpload = ({ onConfirm, canvaTemplateUrl = null }) => {
         }}
         onClick={() => fileInputRef.current?.click()}
       >
-        {loading ? (
-          <Box sx={{ py: 1 }}>
-            <CircularProgress size={24} />
-            <Typography variant="caption" sx={{ mt: 1, display: "block" }}>
-              Processing...
-            </Typography>
-          </Box>
-        ) : (
-          <Box sx={{ py: 1 }}>
-            <CloudUpload sx={{ fontSize: 32, color: "primary.main", mb: 1 }} />
-            <Typography variant="subtitle2" gutterBottom>
-              Upload Promo Banner
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ mb: 1, display: "block" }}
-            >
-              JPG, PNG, WebP • Max 5MB • 6:1 ratio recommended
-            </Typography>
-
-            {canvaTemplateUrl && (
-              <>
-                <Divider sx={{ my: 1, mx: -2 }} />
-                <Link
-                  href={canvaTemplateUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                    fontSize: "0.75rem",
-                    textDecoration: "none",
-                    color: "primary.main",
-                    "&:hover": {
-                      textDecoration: "underline",
-                    },
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Use Canva Template <OpenInNew sx={{ fontSize: 12 }} />
-                </Link>
-              </>
-            )}
-          </Box>
-        )}
-
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <ToggleButtonGroup
+            value={deviceType}
+            exclusive
+            onChange={handleDeviceTypeChange}
+            size="small"
+            sx={{ mb: 1 }}
+          >
+            <ToggleButton value="DESKTOP">Desktop</ToggleButton>
+            <ToggleButton value="MOBILE">Mobile</ToggleButton>
+            <ToggleButton value="BOTH">Both</ToggleButton>
+          </ToggleButtonGroup>
+          <CloudUpload sx={{ fontSize: 32, color: "primary.main", mb: 1 }} />
+          <Typography variant="subtitle2" gutterBottom>
+            Upload Promo Banner
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mb: 1, display: "block" }}
+          >
+            JPG, PNG, WebP • Max 5MB • 6:1 ratio recommended
+          </Typography>
+          {canvaTemplateUrl && (
+            <>
+              <Divider sx={{ my: 1, mx: -2 }} />
+              <Link
+                href={canvaTemplateUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  fontSize: "0.75rem",
+                  textDecoration: "none",
+                  color: "primary.main",
+                  "&:hover": {
+                    textDecoration: "underline",
+                  },
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                Use Canva Template <OpenInNew sx={{ fontSize: 12 }} />
+              </Link>
+            </>
+          )}
+        </Box>
         <input
           ref={fileInputRef}
           type="file"
@@ -247,7 +274,6 @@ const PromoImageUpload = ({ onConfirm, canvaTemplateUrl = null }) => {
           style={{ display: "none" }}
         />
       </Paper>
-
       {/* Confirmation Dialog */}
       <Dialog
         open={confirmDialog}
@@ -283,52 +309,20 @@ const PromoImageUpload = ({ onConfirm, canvaTemplateUrl = null }) => {
           </Box>
         </DialogTitle>
         <DialogContent sx={{ pb: 3 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Preview how your banner will appear on different devices:
-          </Typography>
-
           {preview && (
             <Box>
-              {/* Desktop Preview */}
-              <Typography variant="subtitle2" gutterBottom>
-                Desktop Preview (200px height)
-              </Typography>
-              <Paper
-                variant="outlined"
-                sx={{
-                  mb: 3,
-                  overflow: "hidden",
-                  height: 200,
-                  borderRadius: 1,
-                }}
-              >
-                <img
-                  src={preview.url}
-                  alt="Desktop preview"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
-                />
-              </Paper>
-
-              {/* Mobile Preview */}
-              <Typography variant="subtitle2" gutterBottom>
-                Mobile Preview (140px height)
-              </Typography>
               <Paper
                 variant="outlined"
                 sx={{
                   mb: 2,
                   overflow: "hidden",
-                  height: 140,
+                  height: preview.height,
                   borderRadius: 1,
                 }}
               >
                 <img
                   src={preview.url}
-                  alt="Mobile preview"
+                  alt={DEVICE_PREVIEW[deviceType].label + " preview"}
                   style={{
                     width: "100%",
                     height: "100%",
@@ -336,7 +330,6 @@ const PromoImageUpload = ({ onConfirm, canvaTemplateUrl = null }) => {
                   }}
                 />
               </Paper>
-
               <Alert severity="info" sx={{ mt: 2 }}>
                 <Typography variant="caption">
                   The image has been automatically cropped and optimized for

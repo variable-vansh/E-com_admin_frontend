@@ -20,6 +20,7 @@ import {
 } from "@mui/material";
 import { ExpandMore, ExpandLess } from "@mui/icons-material";
 import { useState } from "react";
+import { getCustomerOrderId, getSystemOrderId } from "../../utils/orderUtils";
 
 const ORDER_STATUSES = [
   "PENDING",
@@ -89,6 +90,7 @@ const OrderTable = ({ orders, onStatusUpdate, loading }) => {
     <Table>
       <TableHead>
         <TableRow>
+          <TableCell>Order ID</TableCell>
           <TableCell>Customer</TableCell>
           <TableCell>Address</TableCell>
           <TableCell>Items</TableCell>
@@ -103,6 +105,17 @@ const OrderTable = ({ orders, onStatusUpdate, loading }) => {
         {orders.map((order) => (
           <>
             <TableRow key={order.id}>
+              <TableCell>
+                <Box>
+                  <Typography variant="body2" fontWeight="bold" color="primary">
+                    #{getCustomerOrderId(order)}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    DB ID: {getSystemOrderId(order)}
+                  </Typography>
+                </Box>
+              </TableCell>
+
               <TableCell>
                 <Box>
                   <Typography variant="body2" fontWeight="medium">
@@ -247,7 +260,7 @@ const OrderTable = ({ orders, onStatusUpdate, loading }) => {
             <TableRow key={`${order.id}-details`}>
               <TableCell
                 style={{ paddingBottom: 0, paddingTop: 0 }}
-                colSpan={8}
+                colSpan={9}
               >
                 <Collapse
                   in={expandedRows.has(order.id)}

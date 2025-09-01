@@ -11,8 +11,10 @@ import {
   Grid,
   Paper,
   Typography,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
-import { Search, FilterList } from "@mui/icons-material";
+import { Search, FilterList, Refresh } from "@mui/icons-material";
 import { ordersService } from "../services/ordersService";
 import useOrdersCrud from "../hooks/useOrdersCrud";
 import PageHeader from "../components/common/PageHeader";
@@ -45,6 +47,7 @@ const Orders = () => {
     statusFilter,
     dateFrom,
     dateTo,
+    fetchData,
   } = useOrdersCrud(ordersService);
 
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -87,16 +90,33 @@ const Orders = () => {
     setMaxItems("");
   };
 
+  const handleRefresh = async () => {
+    await fetchData();
+  };
+
   return (
     <Box>
       <PageHeader
         title="Orders"
         actionButton={
           <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+            <Tooltip title="Refresh orders">
+              <IconButton
+                onClick={handleRefresh}
+                disabled={loading}
+                color="primary"
+                sx={{
+                  bgcolor: "primary.lighter",
+                  "&:hover": { bgcolor: "primary.light" },
+                }}
+              >
+                <Refresh />
+              </IconButton>
+            </Tooltip>
             <SearchBar
               value={searchQuery}
               onChange={searchItems}
-              placeholder="Search by customer name, phone, order ID..."
+              placeholder="Search by customer name, phone, 6-digit order ID..."
               sx={{ width: 350 }}
             />
             <Button

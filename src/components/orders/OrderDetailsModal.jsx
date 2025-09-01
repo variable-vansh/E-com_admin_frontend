@@ -19,6 +19,11 @@ import {
   IconButton,
 } from "@mui/material";
 import { Close } from "@mui/icons-material";
+import {
+  getCustomerOrderId,
+  getSystemOrderId,
+  extractOrderId,
+} from "../../utils/orderUtils";
 
 const modalStyle = {
   position: "absolute",
@@ -98,7 +103,7 @@ const OrderDetailsModal = ({ open, onClose, order, onStatusUpdate }) => {
           }}
         >
           <Typography variant="h5">
-            Order Details - #{order.orderNumber || order.id}
+            Order Details - #{extractOrderId(order)}
           </Typography>
           <IconButton onClick={onClose}>
             <Close />
@@ -132,10 +137,17 @@ const OrderDetailsModal = ({ open, onClose, order, onStatusUpdate }) => {
                 <Grid container spacing={2}>
                   <Grid item xs={6}>
                     <Typography variant="body2">
-                      <strong>Order ID:</strong> {order.orderId || order.id}
+                      <strong>Customer Order ID:</strong> #
+                      {getCustomerOrderId(order)}
                     </Typography>
                   </Grid>
                   <Grid item xs={6}>
+                    <Typography variant="body2">
+                      <strong>System Order ID:</strong>{" "}
+                      {getSystemOrderId(order)}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12}>
                     <Typography variant="body2">
                       <strong>Order Date:</strong>{" "}
                       {new Date(

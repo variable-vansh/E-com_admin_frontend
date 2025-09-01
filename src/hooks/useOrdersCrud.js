@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { getSearchableOrderFields } from "../utils/orderUtils";
 
 const useOrdersCrud = (service, autoFetch = true) => {
   const [allData, setAllData] = useState([]);
@@ -61,15 +62,7 @@ const useOrdersCrud = (service, autoFetch = true) => {
     if (searchQuery.trim()) {
       const searchTerm = searchQuery.toLowerCase().trim();
       filtered = filtered.filter((order) => {
-        const searchableFields = [
-          order.customerName,
-          order.customerEmail,
-          order.customerPhone,
-          order.orderId,
-          order.orderNumber,
-          order.id?.toString(),
-        ];
-
+        const searchableFields = getSearchableOrderFields(order);
         return searchableFields.some((field) =>
           field?.toLowerCase().includes(searchTerm)
         );

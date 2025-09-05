@@ -37,6 +37,12 @@ export const routes = [
     component: "Products",
   },
   {
+    path: "/coupons",
+    name: "Coupons",
+    icon: "LocalOffer",
+    component: "Coupons",
+  },
+  {
     path: "/grains",
     name: "Grains",
     icon: "Grain",

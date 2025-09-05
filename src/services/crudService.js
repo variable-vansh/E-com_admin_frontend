@@ -14,7 +14,18 @@ class CrudService {
         ? `${this.endpoint}?${queryString}`
         : this.endpoint;
       const response = await api.get(url);
-      return { data: response.data, error: null };
+
+      // Handle new backend response structure
+      if (response.data && response.data.success && response.data.data) {
+        return {
+          data: response.data.data,
+          pagination: response.data.pagination,
+          error: null,
+        };
+      }
+
+      // Fallback for legacy response structure
+      return { data: response.data || [], error: null };
     } catch (error) {
       const errorMessage = `Failed to fetch ${this.entityName}s`;
       toast.error(errorMessage);
@@ -25,6 +36,13 @@ class CrudService {
   async getById(id) {
     try {
       const response = await api.get(`${this.endpoint}/${id}`);
+
+      // Handle new backend response structure
+      if (response.data && response.data.success && response.data.data) {
+        return { data: response.data.data, error: null };
+      }
+
+      // Fallback for legacy response structure
       return { data: response.data, error: null };
     } catch (error) {
       const errorMessage = `Failed to fetch ${this.entityName}`;
@@ -37,9 +55,24 @@ class CrudService {
     try {
       const response = await api.post(this.endpoint, data);
       toast.success(`${this.entityName} created successfully`);
+
+      // Handle new backend response structure
+      if (response.data && response.data.success && response.data.data) {
+        return { data: response.data.data, error: null };
+      }
+
+      // Fallback for legacy response structure
       return { data: response.data, error: null };
     } catch (error) {
-      const errorMessage = `Failed to create ${this.entityName}`;
+      let errorMessage = `Failed to create ${this.entityName}`;
+
+      // Handle specific backend error messages
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+
       toast.error(errorMessage);
       return { data: null, error: errorMessage };
     }
@@ -49,9 +82,24 @@ class CrudService {
     try {
       const response = await api.put(`${this.endpoint}/${id}`, data);
       toast.success(`${this.entityName} updated successfully`);
+
+      // Handle new backend response structure
+      if (response.data && response.data.success && response.data.data) {
+        return { data: response.data.data, error: null };
+      }
+
+      // Fallback for legacy response structure
       return { data: response.data, error: null };
     } catch (error) {
-      const errorMessage = `Failed to update ${this.entityName}`;
+      let errorMessage = `Failed to update ${this.entityName}`;
+
+      // Handle specific backend error messages
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+
       toast.error(errorMessage);
       return { data: null, error: errorMessage };
     }
@@ -96,6 +144,7 @@ class CrudService {
 // Create service instances
 export const categoriesService = new CrudService("/categories", "Category");
 export const productsService = new CrudService("/products", "Product");
+export const couponsService = new CrudService("/coupons", "Coupon");
 export const grainsService = new CrudService("/grains", "Grain");
 export const usersService = new CrudService("/users", "User");
 // Note: Using enhanced ordersService from ordersService.js instead

@@ -15,6 +15,7 @@ import {
   Inventory,
   Receipt,
   Campaign,
+  LocalOffer,
 } from "@mui/icons-material";
 
 import AgricultureIcon from "@mui/icons-material/Agriculture";
@@ -29,6 +30,7 @@ const Sidebar = () => {
     { text: "Grains", icon: <AgricultureIcon />, path: "/grains" },
     { text: "Categories", icon: <Category />, path: "/categories" },
     { text: "Products", icon: <ShoppingCart />, path: "/products" },
+    { text: "Coupons", icon: <LocalOffer />, path: "/coupons" },
     { text: "Inventory", icon: <Inventory />, path: "/inventory" },
     { text: "Users", icon: <People />, path: "/users" },
   ];
